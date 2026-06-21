@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Abusing the Chromebook Perks System to Steal Promo Codes</title>
+
+    <meta name="description" content="The Chromebook Perks page lets you redeem a few promo codes for your Chrome OS device, but how this page actually validates your device is rather interesting. Unfortunately for Google, they didn't make this system very secure.">
+    <meta property="og:title" content="Abusing the Chromebook Perks System to Steal Promo Codes">
+    <meta property="og:url" content="https://red60.us/blog/posts/echoanywhere.html">
+    <meta property="og:description" content="The Chromebook Perks page lets you redeem a few promo codes for your Chrome OS device, but how this page actually validates your device is rather interesting. Unfortunately for Google, they didn't make this system very secure.">
+    <meta property="og:image" content="https://red60.us/assets/img/icon.png">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0a080f">
+
+    <link rel="stylesheet" href="/assets/css/main.css">
+    
+
+    
+    
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/" id="name_container">
+          <img id="site_logo" srcset="/assets/img/icon_96px.png 2x" src="/assets/img/icon_48px.png" width="48px" height="48px" alt="website logo">
+          <h1 id="site_name">Red60</h1>
+        </a>
+        <div id="links_container">
+          <a href="/">About</a>
+          <a href="/projects/">Projects</a>
+          <a href="/blog/">Blog</a>
+        </div>
+      </nav>
+    </header>
+
+    <div id="content_wrapper">
+      <div id="article_div">
+        
+  <h1>Abusing the Chromebook Perks System to Steal Promo Codes</h1>
+  <p><i>By Red on 11/18/23</i></p>
+  <h2>Introduction:</h2>
+<p>If you've ever owned a personal Chromebook, then you've likely seen the <a href="https://www.google.com/chromebook/perks/">Chromebook Perks</a> page. This site hosts a list of offers for your specific Chrome OS device, and lets you redeem some promo codes for various services. The interesting part about this page is how it actually validates whether or not you're using an eligible device. Unfortunately for Google, they didn't make this system very secure. </p>
+<h2>The Chromebook Perks System:</h2>
+<p>The Perks page isn't actually responsible for checking the available offers and redeeming them. Instead, this is handled by a hidden Chrome extension called ECHO, which the webpage can send data to. Just like QuickOffice, ECHO is a component extension, meaning that it's included with every Chrome OS installation. Also, it should be noted that all of this code is inside the proprietary portion of Chrome OS, which is probably why this bug was only discovered recently. </p>
+<p>The ECHO extension (sometimes called "Chrome Goodies") has access to a few private Chrome APIs, the most important one being <code>chrome.echoPrivate</code>. This API is responsible for the user consent prompt, as well as returning a list of valid offers. The extension also has the ability to retrieve hidden system information, such as the board name and the device ID, which is used for the validation aspect.</p>
+<p>The method that the Perks page uses to communicate to the extension is rather shoddy. For whatever reason, instead of using the <a href="https://developer.chrome.com/docs/extensions/reference/runtime/"><code>chrome.runtime</code></a> API to handle this, Google opted to use an iframe. The page simply puts an extension page inside an iframe (<code>chrome-extension://kddnkjkcjddckihglkfcickdhbmaodcn/broker.html</code>) and posts messages to it via <code>iframe.postMessage</code>. Apparently this may have once been an intended feature, but who knows what they were thinking back in 2012 when most of this code was written.</p>
+<p>After this, the <code>broker.html</code> page receives the posted data and passes it on to the extension's background page (this time using <code>chrome.runtime</code>). This is where the private APIs mentioned earlier are actually used. The response is passed back to <code>broker.html</code>, which finally returns this data to the Perks page by posting a message to its parent. </p>
+<h2>The Vulnerability:</h2>
+<p>Chrome only lets regular webpages iframe an extension page if that extension has explicitly allowed it. Normally, to reduce the chances of abuse, an extension would restrict access to only a few domains. The manifest of the ECHO extension, however, allows <em>any</em> webpage to access <code>broker.html</code>, via the <a href="https://developer.chrome.com/docs/extensions/mv2/manifest/web_accessible_resources/"><code>web_accessible_resources</code></a> property. Additionally, the ECHO extension never checks where the messages originate from, so any webpage is able to impersonate the Perks page and communicate with the extension.</p>
+<p>What's puzzling about this bug is that the code for handing <code>chrome.runtime</code> messages is already present in the extension, so there's no reason to use the insecure iframe method. Also present in the Chrome Perks system <a href="https://web.archive.org/web/20231116025133/https://www.gstatic.com/chromeos/offers/js/echo_provider_api.js">is code which utilizes</a> the removed <a href="https://en.wikipedia.org/wiki/Web_Intents">Web Intents</a> API to communicate with the extension. This API only existed for six Chrome versions (18 to 23) before being removed in 2012. Even after this bug was fixed, the broken Web Intents code <em>still</em> exists in the current Chrome Perks page.</p>
+<p>So what can an attacker do with this anyways?</p>
+<h2>Possible Payloads:</h2>
+<p>Here's a minimal proof-of-concept which is able to post messages to the extension and get all the offers the current device is eligible for, as well as any previously redeemed promo codes.</p>
+<div class="codehilite" style="background: #263238"><pre style="line-height: 125%;"><span></span><code><span style="color: #BB80B3">let</span><span style="color: #EFF"> iframe </span><span style="color: #89DDFF">=</span><span style="color: #EFF"> </span><span style="color: #82AAFF">document</span><span style="color: #89DDFF">.</span><span style="color: #EFF">createElement</span><span style="color: #89DDFF">(</span><span style="color: #C3E88D">&quot;iframe&quot;</span><span style="color: #89DDFF">);</span>
+<span style="color: #EFF">iframe</span><span style="color: #89DDFF">.</span><span style="color: #EFF">src </span><span style="color: #89DDFF">=</span><span style="color: #EFF"> </span><span style="color: #C3E88D">&quot;chrome-extension://kddnkjkcjddckihglkfcickdhbmaodcn/broker.html&quot;</span><span style="color: #89DDFF">;</span>
+<span style="color: #EFF">iframe</span><span style="color: #89DDFF">.</span><span style="color: #EFF">style</span><span style="color: #89DDFF">.</span><span style="color: #EFF">display </span><span style="color: #89DDFF">=</span><span style="color: #EFF"> </span><span style="color: #C3E88D">&quot;none&quot;</span><span style="color: #89DDFF">;</span>
+<span style="color: #EFF">iframe</span><span style="color: #89DDFF">.</span><span style="color: #EFF">onload </span><span style="color: #89DDFF">=</span><span style="color: #EFF"> </span><span style="color: #89DDFF">()</span><span style="color: #EFF"> </span><span style="color: #89DDFF">=&gt;</span><span style="color: #EFF"> </span><span style="color: #89DDFF">{</span>
+<span style="color: #EFF">  iframe</span><span style="color: #89DDFF">.</span><span style="color: #EFF">contentWindow</span><span style="color: #89DDFF">.</span><span style="color: #EFF">postMessage</span><span style="color: #89DDFF">({</span>
+<span style="color: #EFF">    cmd</span><span style="color: #89DDFF">:</span><span style="color: #EFF"> </span><span style="color: #C3E88D">&quot;getOfferInfo&quot;</span>
+<span style="color: #EFF">  </span><span style="color: #89DDFF">},</span><span style="color: #EFF"> </span><span style="color: #C3E88D">&quot;chrome-extension://kddnkjkcjddckihglkfcickdhbmaodcn&quot;</span><span style="color: #89DDFF">);</span>
+<span style="color: #89DDFF">};</span>
+<span style="color: #82AAFF">window</span><span style="color: #89DDFF">.</span><span style="color: #EFF">addEventListener</span><span style="color: #89DDFF">(</span><span style="color: #C3E88D">&quot;message&quot;</span><span style="color: #89DDFF">,</span><span style="color: #EFF"> console</span><span style="color: #89DDFF">.</span><span style="color: #EFF">log</span><span style="color: #89DDFF">);</span>
+<span style="color: #82AAFF">document</span><span style="color: #89DDFF">.</span><span style="color: #EFF">body</span><span style="color: #89DDFF">.</span><span style="color: #EFF">append</span><span style="color: #89DDFF">(</span><span style="color: #EFF">iframe</span><span style="color: #89DDFF">);</span>
+</code></pre></div>
+
+<p>A webpage is also able to trigger the user consent prompt for redeeming an offer. If the user hits allow, then the offer gets redeemed, with the malicious page receiving the stolen promo code. </p>
+<div class="codehilite" style="background: #263238"><pre style="line-height: 125%;"><span></span><code><span style="color: #EFF">iframe</span><span style="color: #89DDFF">.</span><span style="color: #EFF">contentWindow</span><span style="color: #89DDFF">.</span><span style="color: #EFF">postMessage</span><span style="color: #89DDFF">({</span>
+<span style="color: #EFF">  origin</span><span style="color: #89DDFF">:</span><span style="color: #EFF"> </span><span style="color: #C3E88D">&quot;https://www.google.com/chromebook/perks/&quot;</span><span style="color: #89DDFF">,</span>
+<span style="color: #EFF">  serviceId</span><span style="color: #89DDFF">:</span><span style="color: #EFF"> </span><span style="color: #C3E88D">&quot;minecraft.2023&quot;</span><span style="color: #89DDFF">,</span>
+<span style="color: #EFF">  serviceName</span><span style="color: #89DDFF">:</span><span style="color: #EFF"> </span><span style="color: #C3E88D">&quot;free minecraft fr fr&quot;</span><span style="color: #89DDFF">,</span>
+<span style="color: #EFF">  requestNonce</span><span style="color: #89DDFF">:</span><span style="color: #EFF"> </span><span style="color: #C3E88D">&quot;&quot;</span><span style="color: #89DDFF">+</span><span style="color: #82AAFF">Math</span><span style="color: #89DDFF">.</span><span style="color: #EFF">random</span><span style="color: #89DDFF">(),</span>
+<span style="color: #EFF">  isGroupType</span><span style="color: #89DDFF">:</span><span style="color: #EFF"> </span><span style="color: #89DDFF">false,</span>
+<span style="color: #EFF">  isDebugMode</span><span style="color: #89DDFF">:</span><span style="color: #EFF"> </span><span style="color: #89DDFF">false,</span>
+<span style="color: #EFF">  otcCode</span><span style="color: #89DDFF">:</span><span style="color: #EFF"> </span><span style="color: #89DDFF">false</span>
+<span style="color: #89DDFF">},</span><span style="color: #EFF"> </span><span style="color: #C3E88D">&quot;chrome-extension://kddnkjkcjddckihglkfcickdhbmaodcn&quot;</span><span style="color: #89DDFF">);</span>
+</code></pre></div>
+
+<p>Once this code is run, the following popup gets displayed:</p>
+<p><img alt="the fake user consent popup" src="/blog/assets/echoanywhere/echo_popup_small.png"></p>
+<p>In this case, the <code>serviceId</code> determines which offer gets redeemed, with the <code>minecraft.2023</code> offer corresponding to the <a href="https://chromeunboxed.com/chromebook-perk-minecraft-realms">free Minecraft</a> promotion happening right now. Once the user hits the "allow" button, the offer will be redeemed, and the malicious page can see the returned promo code. </p>
+<p>The service name can also be set to any string, which will influence what is shown in the dialog. If this is set to a long enough string, the "wants to check if you are using an eligible Chrome OS device" part of the dialog disappears. This dialog is also able to block all inputs to the browser window, which can be used for a denial-of-service attack.</p>
+<h2>Conclusion:</h2>
+<p>I reported this vulnerability to Google on May 6th, 2023. It was immediately classified as P1/S1 (high priority, high severity), although it would take until August 10th until it would finally be fixed. In February 2024, Google eventually paid me $500 for this bug report.</p>
+<p>You can take a look at the original <a href="https://bugs.chromium.org/p/chromium/issues/detail?id=1443214">bug report</a> if you want, and here's a link to my <a href="https://local.red60.us/echoanywhere/">final POC</a>.</p>
+<p>Anyways, it turns out that if you still ship legacy proprietary code from 2012, large security issues will show up as soon as someone actually takes a good look at it. Sure enough, other portions of the ECHO system turned out to be vulnerable as well, as <a href="https://blog.bypassi.com/">Bypassi</a> would discover soon after. But that's a story for another day.</p>
+
+
+        
+          <p><a href="../"><- Back</a></p>
+        
+      </div>
+    </div>
+
+    <div id="footer">
+      <p>Copyright &copy; 2026 Red60. All rights reserved. The source code for this website can be found on my <a href="https://github.com/ading2210/website-rewrite/" target="_blank" rel="noreferrer">Github</a>.</p>
+    </div>
+
+    </body>
+</html>

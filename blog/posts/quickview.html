@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Adventures in Point-Blank: Exploiting QuickOffice on Chrome OS</title>
+
+    <meta name="description" content="This blog post mainly attempts to explain the process in which I, along with Bypassi, created QuickView, an exploit which allows for the creation of webview windows with arbitrary URLs.">
+    <meta property="og:title" content="Adventures in Point-Blank: Exploiting QuickOffice on Chrome OS">
+    <meta property="og:url" content="https://red60.us/blog/posts/quickview.html">
+    <meta property="og:description" content="This blog post mainly attempts to explain the process in which I, along with Bypassi, created QuickView, an exploit which allows for the creation of webview windows with arbitrary URLs.">
+    <meta property="og:image" content="https://red60.us/assets/img/icon.png">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#0a080f">
+
+    <link rel="stylesheet" href="/assets/css/main.css">
+    
+
+    
+    
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="/" id="name_container">
+          <img id="site_logo" srcset="/assets/img/icon_96px.png 2x" src="/assets/img/icon_48px.png" width="48px" height="48px" alt="website logo">
+          <h1 id="site_name">Red60</h1>
+        </a>
+        <div id="links_container">
+          <a href="/">About</a>
+          <a href="/projects/">Projects</a>
+          <a href="/blog/">Blog</a>
+        </div>
+      </nav>
+    </header>
+
+    <div id="content_wrapper">
+      <div id="article_div">
+        
+  <h1>Adventures in Point-Blank: Exploiting QuickOffice on Chrome OS</h1>
+  <p><i>By Red on 5/3/23</i></p>
+  <h2>Introduction:</h2>
+<p>This blog post mainly attempts to explain the process in which I, along with Bypassi (Bypassi#7037), created <a href="https://quickview-exploit.pages.dev">QuickView</a>, an exploit which allows for the creation of webview windows with arbitrary URLs. The exploit works even on managed accounts with features such as incognito mode disabled, allowing users to access pages that would normally be blocked via extensions.</p>
+<h2>A Summary of Point-Blank:</h2>
+<p>If you haven't been in the whole "unblocking" community and don't know about Point-Blank, it's basically a trick which allows you to run arbitrary Javascript on privileged pages, such as <code>chrome://</code> and <code>chrome-extension://</code> URLs. It wouldn't really be considered an exploit though, since it's technically intended behavior.</p>
+<p>There's a couple variations, but the main one works by the fact that whenever you open an <code>about:blank</code> page using <code>window.open</code>, a reference to the opener exists as the <code>window.opener</code> object. The important bit though, is that you are able to run bookmarklets (<code>javascript:</code> links) on this newly opened page, allowing you access to restricted Chrome APIs via <code>opener.chrome</code>, which removes the need for a full blown XSS vulnerability.</p>
+<p>This isn't the exact method that's used for this exploit, but it demonstrates the general concept well enough, which is that certain opened tabs can retain the permissions of their parent.</p>
+<p>A more detailed explanation can be found at <a href="https://blog.bypassi.com/_/point-blank/">Bypassi's website</a>, as he is the one who originally discovered it.</p>
+<h2>What Even is QuickOffice?</h2>
+<p>QuickOffice is Google's editor for Microsoft Office files, which is built right into Chrome OS as a component extension. You may have also heard of it by the name "Office Editing For Docs, Sheets &amp; Slides."</p>
+<p>It was originally a mobile app for various PDAs developed way back in 1997 by some long-gone startup. It was eventually purchased by Google in 2013, who ported it to Android and Chrome OS to add Office support to those operating systems. After Google Docs became mainstream soon after, they discontinued it in early 2014.</p>
+<p>However, for whatever reason, it still lives on in modern Chrome OS as a sort of last-resort editor for Office files. The way they implemented it was via a component extension, which is a regular Chrome extension that is built into the browser and can't be uninstalled. Other notable component extensions include ChromeVox and the Chrome OS virtual keyboard.</p>
+<h2>Discovering Point-Blank in QuickOffice:</h2>
+<p>This whole rabbit hole all started when I opened a CSV file from the file manager.</p>
+<p><img alt="A screenshot of QuickOffice opening a CSV file." src="/blog/assets/quickview/quickoffice_screenshot.png"></p>
+<p>After being surprised that Chrome OS could even open spreadsheets offline, I took a look at Devtools to see if there were any useful Chrome APIs.</p>
+<p><img alt="A screenshot of QuickOffice's Chrome APIs." src="/blog/assets/quickview/quickoffice_chrome_apis.png"></p>
+<p>And, wow! That was a whole lot more than I expected from just a basic word processor. Of course the next thing I thought was whether or not this could be abused.</p>
+<p>I did a simple search for <code>window.open</code> in the sources tab to see if this was vulnerable to Point-Blank, and as it turns out, it was.</p>
+<p><img alt="A screenshot of the DevTools sources tab on QuickOffice." src="/blog/assets/quickview/quickoffice_sources_tab.png"></p>
+<p>Most of them were used for toolbar entries that no longer existed (like what the hell is an iGoogle?), but some of them looked more promising. I told this to Bypassi, and because of his sheer skill, he was able to find a way to trigger Point-Blank pretty quickly.</p>
+<p>The idea was basically to create an invalid link in the file QuickOffice was opening, such as <code>https://google.com/%00</code>, and when that link was clicked, it'd open an <code>about:blank#blocked</code> page.</p>
+<p>On that page, there is no <code>opener</code> object, but <code>window.origin</code> is set to <code>chrome-extension://bpmcpldpdmajfigpchkicefoigmkfalc</code>. This allowed us to bypass CSP entirely, as Chrome still thought that the page belonged to the extension. Thus, we were able to simply create an iframe that embeds any QuickOffice page, which could then be accessed using <code>window.frames[0]</code>.</p>
+<p>Now that we had a way to access the private Chrome APIs belonging to QuickOffice, all we needed to do now was find a useful payload.</p>
+<h2>Finding a Payload:</h2>
+<p>Due to the sheer number of Chrome APIs exposed, finding something useful to do with them wasn't hard at all. We quickly found out that <code>chrome.identity.launchWebAuthFlow</code> could be used to open a completely unrestricted webview under the guise of a login prompt. Additionally, <code>chrome.extension.getBackgroundPage</code> could be used to get the background page of the extension and make our payload persistent until a reboot.</p>
+<p><img alt="A screenshot of the webview payload." src="/blog/assets/quickview/webview_screenshot.png"></p>
+<p>Here is the bare-bones POC that we initially came up with:</p>
+<div class="codehilite" style="background: #263238"><pre style="line-height: 125%;"><span></span><code><span style="color: #BB80B3">let</span><span style="color: #EFF"> iframe </span><span style="color: #89DDFF">=</span><span style="color: #EFF"> </span><span style="color: #82AAFF">document</span><span style="color: #89DDFF">.</span><span style="color: #EFF">createElement</span><span style="color: #89DDFF">(</span><span style="color: #C3E88D">&quot;iframe&quot;</span><span style="color: #89DDFF">);</span>
+<span style="color: #EFF">iframe</span><span style="color: #89DDFF">.</span><span style="color: #EFF">src </span><span style="color: #89DDFF">=</span><span style="color: #EFF"> </span><span style="color: #C3E88D">&quot;chrome-extension://bpmcpldpdmajfigpchkicefoigmkfalc/views/app.html&quot;</span><span style="color: #89DDFF">;</span>
+<span style="color: #EFF">iframe</span><span style="color: #89DDFF">.</span><span style="color: #EFF">style</span><span style="color: #89DDFF">.</span><span style="color: #EFF">display </span><span style="color: #89DDFF">=</span><span style="color: #EFF"> </span><span style="color: #C3E88D">&quot;none&quot;</span><span style="color: #89DDFF">;</span>
+<span style="color: #EFF">iframe</span><span style="color: #89DDFF">.</span><span style="color: #EFF">onload </span><span style="color: #89DDFF">=</span><span style="color: #EFF"> </span><span style="color: #89DDFF">()</span><span style="color: #EFF"> </span><span style="color: #89DDFF">=&gt;</span><span style="color: #EFF"> </span><span style="color: #89DDFF">{</span><span style="color: #EFF">      </span>
+<span style="color: #EFF">  chrome </span><span style="color: #89DDFF">=</span><span style="color: #EFF"> </span><span style="color: #82AAFF">window</span><span style="color: #89DDFF">.</span><span style="color: #EFF">frames</span><span style="color: #89DDFF">[</span><span style="color: #F78C6C">0</span><span style="color: #89DDFF">].</span><span style="color: #EFF">chrome</span><span style="color: #89DDFF">;</span>
+<span style="color: #EFF">  console</span><span style="color: #89DDFF">.</span><span style="color: #EFF">log</span><span style="color: #89DDFF">(</span><span style="color: #EFF">chrome</span><span style="color: #89DDFF">);</span>
+<span style="color: #EFF">  alert</span><span style="color: #89DDFF">(</span><span style="color: #C3E88D">&quot;Payload success! Check the console.&quot;</span><span style="color: #89DDFF">);</span>
+<span style="color: #EFF">  chrome</span><span style="color: #89DDFF">.</span><span style="color: #EFF">identity</span><span style="color: #89DDFF">.</span><span style="color: #EFF">launchWebAuthFlow</span><span style="color: #89DDFF">({</span><span style="color: #EFF">url</span><span style="color: #89DDFF">:</span><span style="color: #C3E88D">&quot;https://google.com&quot;</span><span style="color: #89DDFF">,</span><span style="color: #EFF"> interactive</span><span style="color: #89DDFF">:true},</span><span style="color: #EFF">e</span><span style="color: #89DDFF">=&gt;{});</span>
+<span style="color: #89DDFF">}</span>
+<span style="color: #82AAFF">document</span><span style="color: #89DDFF">.</span><span style="color: #EFF">body</span><span style="color: #89DDFF">.</span><span style="color: #EFF">append</span><span style="color: #89DDFF">(</span><span style="color: #EFF">iframe</span><span style="color: #89DDFF">);</span>
+</code></pre></div>
+
+<p>Of course, this isn't very polished or easy to use, so I spent the next few days working on a nice way to embed the whole thing and a decent GUI.</p>
+<h2>Embedding, Polishing, and Some Clickjacking Shenanigans:</h2>
+<p>One of the considerations I had while making the website was to try to make it as easy as possible, as well as to hide the QuickOffice component entirely from the user. The final payload itself is fairly straightforward; I just define an HTML string and do <code>document.write</code> to the page, then setup some event listeners. Bypassi also had the idea to set up a tab listener in order to re-launch the webview whenever a specific link was visited, which in this case is <code>https://www.google.com/#%20</code>.</p>
+<p>Now, hiding QuickOffice from an exploit literally named after it was incredibly annoying and finicky. Embedding the document with the invalid link is pretty easy, you just iframe a .docx file and it'll open in QuickOffice. Issue is, that looks boring and unprofessional, and we wanted to make this seem more complicated than just a couple of iframes.</p>
+<p>To do this, we used a technique called <a href="https://en.wikipedia.org/wiki/Clickjacking">clickjacking</a>, in which the user clicks on a page, but that click actually goes through to some element that's hidden below. With this implementation, it works by simply cutting off parts of the iframe using CSS absolute positioning and hiding any overflow.</p>
+<p>However, it breaks whenever the user changes their page zoom or their monitor DPI. To resolve this, I implemented a check for the browser zoom level, which would throw up a warning if it's not detected as 100%. I also wrote a standalone version that consists of a single .docx file that can be opened, in case this method fails.</p>
+<p><img alt="A screenshot of the QuickOffice first launch prompt." src="/blog/assets/quickview/quickoffice_first_launch.png"></p>
+<p>QuickOffice also displays a prompt on the first time it's launched, so the counter this, we centered the iframe around the "Got it" button, and zoomed it in a bunch so that the text would not be visible. Then we could just throw our own custom text over it, so that it looks no different from a regular HTML button. Also, to make sure that the user would always hit the link, we just made the embedded document contain a link consisting of unicode characters that filled the entirety of the page.</p>
+<p>At this time, I also drew up a logo to make it look a bit more professional.</p>
+<p><img alt="A screenshot of the QuickView icon." src="/blog/assets/quickview/quickview_icon.png"></p>
+<h2>The Final Result:</h2>
+<p>So, what was this all for? Well, for starters, because QuickOffice is found on every single Chrome OS device, its the first universal webview exploit found so far. Thus, it should work on any managed Chromebook which has bookmarklets allowed. I'm sure this has a lot more potential outside of just unblocking a few pages, so feel free to experiment with the exploit yourself.</p>
+<p>If you want to check out the finalized proof of concept, I've deployed it to <a href="https://quickview-exploit.pages.dev">Cloudflare Pages</a> for easy access. If you don't have a Chromebook but still want to see the source code, I've published it on <a href="https://github.com/ading2210/quickview">Github</a> as well.</p>
+<p>I'd once again like to thank Bypassi for helping with this, specifically by finding a way to trigger Point-Blank, as well as for finding the <code>chrome.identity</code> payload.</p>
+<p>Funnily enough, at the same time I was writing this blog post, Bypassi discovered and released <a href="https://ltmeat.bypassi.com">LTMEAT</a>, which is a much simpler and more practical exploit allowing for the disabling of virtually any Chrome extension. Use that instead if all you care about is unblocking stuff on your school Chromebook.</p>
+
+
+        
+          <p><a href="../"><- Back</a></p>
+        
+      </div>
+    </div>
+
+    <div id="footer">
+      <p>Copyright &copy; 2026 Red60. All rights reserved. The source code for this website can be found on my <a href="https://github.com/ading2210/website-rewrite/" target="_blank" rel="noreferrer">Github</a>.</p>
+    </div>
+
+    </body>
+</html>
