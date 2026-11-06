@@ -12,12 +12,53 @@
     status: $("status"),
     name: $("display-name"),
     handle: $("handle"),
+    badges: $("badges"),
     banner: $("banner-img"),
     spotify: $("spotify-body"),
     games: $("games-body"),
     views: $("views-count"),
     viewsWrap: $("views"),
   };
+
+  /* ------------------------------------------------------------
+     discord badges
+     ------------------------------------------------------------ */
+
+  const BADGES = [
+    [1, "Discord Staff", null],
+    [2, "Partnered Server Owner", "3f9748e53446a137a052f3454e2de41e"],
+    [4, "HypeSquad Events", "8a88d63823d8a71cd5e390baa45efa02"],
+    [8, "Bug Hunter", "2717692c7dca7289b35297368a940dd0"],
+    [64, "HypeSquad Bravery", "8a88d63823d8a71cd5e390baa45efa02"],
+    [128, "HypeSquad Brilliance", "011940fd013da3f7fb926e4a1cd2e618"],
+    [256, "HypeSquad Balance", "3aa41de486fa12454c3761e8e223442e"],
+    [512, "Early Supporter", "7060786766c9c840eb3019e725d2b358"],
+    [16384, "Bug Hunter Gold", "3ae63761260f9f8b7c8f6f09f0f0ac1c"],
+    [65536, "Early Verified Developer", "6df5892e0f35b7634d1412ea2ef0c5ea"],
+    [4194304, "Active Developer", "6bdc42827a38498929a4920da12695d9"],
+  ];
+
+  function renderBadges(user) {
+    const el = els.badges;
+    if (!el) return;
+
+    const flags = user.public_flags || 0;
+    const items = BADGES.filter(([bit, , hash]) => hash && (flags & bit) === bit).map(
+      ([, name, hash]) => ({ name, src: `https://cdn.discordapp.com/badge-icons/${hash}.png` })
+    );
+
+    (CFG.badges || []).forEach((b) => b && b.icon && items.push({ name: b.name || "", src: b.icon }));
+
+    if (!items.length) {
+      el.style.display = "none";
+      return;
+    }
+
+    el.style.display = "";
+    el.innerHTML = items
+      .map((b) => `<img class="badge-img" src="${b.src}" alt="" title="${b.name}" loading="lazy">`)
+      .join("");
+  }
 
   /* ------------------------------------------------------------
      theme
@@ -296,6 +337,7 @@
     if (els.avatar && (CFG.avatar || user.avatar)) {
       els.avatar.src = CFG.avatar || avatarUrl(user);
     }
+    renderBadges(user);
     document.title = CFG.displayName || name;
   }
 

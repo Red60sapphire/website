@@ -10,9 +10,16 @@ window.SITE_CONFIG = {
   theme: { a: "#ff4d8d", b: "#7b5cff" },
 
   // Optional overrides. Leave empty to use Discord / local assets.
-  banner: "/assets/img/icon.png",
+  banner: "/assets/img/banner.png",
   avatar: "",
   displayName: "",
+
+  // Intro: the avatar drawn out of characters, click to zoom in.
+  intro: true,
+  introImage: "/assets/img/avatar.png",
+
+  // Optional extra Discord-style badges: [{ name: "Nitro", icon: "url" }]
+  badges: [],
 
   // Presence refresh. Lanyard's socket updates instantly; this is a fallback poll.
   pollMs: 30000,

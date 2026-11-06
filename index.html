@@ -7,7 +7,9 @@
 
     <meta name="description" content="Red60 — developer, security research and web projects." />
     <meta name="theme-color" content="#000000" />
-    <link rel="icon" href="/assets/img/icon_96px.png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="/assets/img/avatar.png" />
+    <link rel="apple-touch-icon" href="/assets/img/avatar.png" />
 
     <meta property="og:title" content="Red60" />
     <meta property="og:url" content="https://red60.us" />
@@ -37,12 +39,24 @@
   </head>
 
   <body>
+    <div class="intro" id="intro">
+      <canvas id="intro-canvas" aria-hidden="true"></canvas>
+      <div class="intro-hint">click to enter</div>
+    </div>
+    <noscript>
+      <style>
+        .intro {
+          display: none;
+        }
+      </style>
+    </noscript>
+
     <main class="shell">
       <!-- ---------------------------------------------------- left -->
       <aside class="col-left">
         <section class="panel profile">
           <div class="banner">
-            <img id="banner-img" src="/assets/img/icon.png" alt="" />
+            <img id="banner-img" src="/assets/img/banner.png" alt="" />
           </div>
 
           <div class="profile-body">
@@ -53,37 +67,19 @@
 
             <div class="name-row">
               <h1 class="name" id="display-name">Red60</h1>
-              <span class="badge">DEV</span>
             </div>
-            <p class="handle" id="handle">@Red60sapphire</p>
+            <p class="handle" id="handle">@music.ly</p>
 
-            <div class="socials">
-              <a class="sq" href="https://discord.gg/yTmmCFv59Q" target="_blank" rel="noopener" title="Discord">
-                <img src="https://cdn.simpleicons.org/discord/5865F2" alt="Discord" />
-              </a>
-              <a class="sq" href="https://github.com/Red60sapphire" target="_blank" rel="noopener" title="GitHub">
-                <img src="https://cdn.simpleicons.org/github/ffffff" alt="GitHub" />
-              </a>
-              <a class="sq" href="mailto:red@red60.us" title="Email">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#c9c9c9" stroke-width="2">
-                  <rect x="2.5" y="4.5" width="19" height="15" rx="3" />
-                  <path d="m3.5 6.5 8.5 6 8.5-6" />
-                </svg>
-              </a>
-              <a class="sq" href="/blog/" title="Blog">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#c9c9c9" stroke-width="2">
-                  <path d="M4 5h16M4 12h16M4 19h10" />
-                </svg>
-              </a>
-            </div>
+            <div class="socials" id="badges"></div>
 
             <div class="about">
               <span class="label">About me</span>
               <p class="about-text">
-                hi! i'm xRed (also known as Red60), a high school student with an interest in
-                programming, web development and browser security. i build <a href="/projects/">weird
-                web projects</a>, write up vulnerabilities i find, and occasionally port games to
-                places they should not run.
+                hi! i'm Red60, a 17 year old fullstack developer. i'm the owner of
+                <a href="https://github.com/OGsWorkshop/Infrared" target="_blank" rel="noopener">Infrared</a>
+                and the owner of
+                <a href="https://github.com/OGsWorkshop" target="_blank" rel="noopener">OGsWorkshop</a>,
+                and i also contribute to various other projects.
               </p>
 
               <div style="margin-top: 14px">
@@ -129,7 +125,7 @@
             <div class="profile-foot">
               <div class="contact">
                 <a class="sq" href="https://discord.gg/yTmmCFv59Q" target="_blank" rel="noopener" title="Discord">
-                  <img src="https://cdn.simpleicons.org/discord/5865F2" alt="Discord" />
+                  <img src="https://cdn.simpleicons.org/discord/ffffff" alt="Discord" />
                 </a>
                 <a class="sq" href="https://github.com/Red60sapphire" target="_blank" rel="noopener" title="GitHub">
                   <img src="https://cdn.simpleicons.org/github/ffffff" alt="GitHub" />
@@ -247,83 +243,15 @@
               </span>
             </a>
 
-            <a class="row" href="https://zynema.co" target="_blank" rel="noopener">
-              <span class="tile" style="--t1: #24324f; --t2: #0a1020; width: 30px; height: 30px; border-radius: 8px; font-size: 12px">Z</span>
+            <a class="row" href="https://github.com/Red60sapphire/sapphire" target="_blank" rel="noopener">
+              <img src="https://github.com/Red60sapphire.png?size=64" alt="" loading="lazy" />
               <span class="meta">
-                <span class="row-title">zynema <span>web</span></span>
-                <span class="row-sub">a browser-based movie and tv streaming platform</span>
+                <span class="row-title">sapphire <span>lib</span></span>
+                <span class="row-sub">a fork of amethyst that improves the extension compatibility layer</span>
               </span>
               <span class="ghost-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 4h6v6M20 4l-8.5 8.5M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
-                </svg>
-              </span>
-            </a>
-          </div>
-        </section>
-
-        <section class="panel list-panel">
-          <span class="label">Writing</span>
-          <div class="list">
-            <a class="row" href="/blog/posts/chrome_sandbox_escape.html">
-              <img src="/assets/img/icon_48px.png" alt="" loading="lazy" />
-              <span class="meta">
-                <span class="row-title">escaping the chrome sandbox through devtools <span>10/16/24</span></span>
-                <span class="row-sub">vulnerability research</span>
-              </span>
-              <span class="ghost-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M5 12h14M13 6l6 6-6 6" />
-                </svg>
-              </span>
-            </a>
-
-            <a class="row" href="/blog/posts/echoanywhere.html">
-              <img src="/assets/img/icon_48px.png" alt="" loading="lazy" />
-              <span class="meta">
-                <span class="row-title">abusing the chromebook perks system <span>11/18/23</span></span>
-                <span class="row-sub">exploit poc</span>
-              </span>
-              <span class="ghost-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M5 12h14M13 6l6 6-6 6" />
-                </svg>
-              </span>
-            </a>
-
-            <a class="row" href="/blog/posts/securly_bypass.html">
-              <img src="/assets/img/icon_48px.png" alt="" loading="lazy" />
-              <span class="meta">
-                <span class="row-title">bypassing securly by manipulating the url <span>10/26/23</span></span>
-                <span class="row-sub">security bypass</span>
-              </span>
-              <span class="ghost-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M5 12h14M13 6l6 6-6 6" />
-                </svg>
-              </span>
-            </a>
-
-            <a class="row" href="/blog/posts/dextensify.html">
-              <img src="/assets/img/icon_48px.png" alt="" loading="lazy" />
-              <span class="meta">
-                <span class="row-title">dextensify: disabling chrome extensions <span>08/20/23</span></span>
-                <span class="row-sub">vulnerability poc</span>
-              </span>
-              <span class="ghost-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M5 12h14M13 6l6 6-6 6" />
-                </svg>
-              </span>
-            </a>
-
-            <a class="row" href="/blog/">
-              <span class="meta">
-                <span class="row-title" style="color: var(--label)">read all posts</span>
-              </span>
-              <span class="ghost-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M5 12h14M13 6l6 6-6 6" />
+                  <path d="m8 6-6 6 6 6M16 6l6 6-6 6" />
                 </svg>
               </span>
             </a>
@@ -349,9 +277,9 @@
               <img src="https://github.com/Red60sapphire.png?size=32" alt="" loading="lazy" />
               doom-in-pdf <em>owner</em>
             </a>
-            <a class="chip" href="https://zynema.co" target="_blank" rel="noopener">
-              <span class="tile" style="--t1: #24324f; --t2: #0a1020; width: 14px; height: 14px; border-radius: 4px; font-size: 8px">Z</span>
-              zynema <em>owner</em>
+            <a class="chip" href="https://github.com/Red60sapphire/sapphire" target="_blank" rel="noopener">
+              <img src="https://github.com/Red60sapphire.png?size=32" alt="" loading="lazy" />
+              sapphire <em>owner</em>
             </a>
             <a class="chip" href="https://github.com/Red60sapphire/website" target="_blank" rel="noopener">
               <img src="https://github.com/Red60sapphire.png?size=32" alt="" loading="lazy" />
@@ -383,6 +311,7 @@
     </main>
 
     <script src="/assets/js/config.js"></script>
+    <script src="/assets/js/intro.js"></script>
     <script src="/assets/js/site.js"></script>
   </body>
 </html>
