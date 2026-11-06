@@ -18,7 +18,6 @@
     games: $("games-body"),
     views: $("views-count"),
     viewsWrap: $("views"),
-    chipAvatar: $("chip-avatar"),
   };
 
   /* ------------------------------------------------------------
@@ -56,11 +55,13 @@
 
   let badgeNames = null;
   let lastUser = null;
+  let profile = null;
 
   function badgeNode(src, title) {
     const span = document.createElement("span");
     span.className = "badge";
     span.title = title;
+    span.setAttribute("aria-label", title);
     const img = document.createElement("img");
     img.src = src;
     img.alt = title;
@@ -70,14 +71,16 @@
     return span;
   }
 
-  function renderBadges(user) {
+  function renderBadges(source) {
     const el = els.badges;
     if (!el) return;
     el.textContent = "";
 
-    /* prefer the decoded badge list; fall back to the raw bitmask */
-    let names = badgeNames;
-    if (!names) {
+    /* the decoded profile is the source of truth; Lanyard is the fallback */
+    const user = profile || source || {};
+
+    let names = user.public_flags_array || badgeNames;
+    if (!Array.isArray(names)) {
       const flags = user.public_flags || 0;
       names = Object.keys(FLAG_BITS)
         .filter((bit) => (flags & Number(bit)) === Number(bit))
@@ -94,7 +97,7 @@
       );
     }
 
-    const guild = user.primary_guild;
+    const guild = user.primary_guild || user.clan;
     if (guild && guild.identity_enabled && guild.badge && guild.identity_guild_id) {
       el.appendChild(
         badgeNode(
@@ -115,11 +118,11 @@
     fetch(`https://japi.rest/discord/v1/user/${id}`)
       .then((r) => r.json())
       .then((res) => {
-        const list = res && res.data && res.data.public_flags_array;
-        if (Array.isArray(list)) {
-          badgeNames = list;
-          if (lastUser) renderBadges(lastUser);
-        }
+        const data = res && res.data;
+        if (!data) return;
+        profile = data;
+        badgeNames = Array.isArray(data.public_flags_array) ? data.public_flags_array : null;
+        renderBadges(data);
       })
       .catch(() => {});
   }
@@ -442,7 +445,6 @@
 
     const src = CFG.avatar || avatarUrl(user);
     if (els.avatar && (CFG.avatar || user.avatar)) els.avatar.src = src;
-    if (els.chipAvatar) els.chipAvatar.src = src;
 
     const deco = user.avatar_decoration_data && user.avatar_decoration_data.asset;
     if (els.deco && deco) {

@@ -361,6 +361,8 @@ button {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-top: 10px;
+  min-height: 24px;
 }
 
 .badges:empty {
@@ -371,10 +373,16 @@ button {
   position: relative;
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   flex: none;
+  cursor: help;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+  transition: transform 0.2s var(--ease);
+}
+
+.badge:hover {
+  transform: translateY(-2px) scale(1.06);
 }
 
 .badge img {
@@ -985,16 +993,11 @@ button {
   border-color: var(--line-2);
 }
 
-.chip img,
-.chip-avatar {
+.chip img {
   width: 18px;
   height: 18px;
   border-radius: 5px;
   object-fit: cover;
-}
-
-.chip-avatar {
-  border-radius: 50%;
 }
 
 .chip-mark {
