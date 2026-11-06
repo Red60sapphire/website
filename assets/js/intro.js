@@ -49,15 +49,15 @@
     return ".";
   }
 
-  /* luminance → warm palette (charcoal → bronze → amber → gold) */
+  /* luminance → warm palette (charcoal → bronze → copper → muted gold) */
   const WARM = [
-    [0.0, [62, 36, 16]],
-    [0.16, [98, 56, 21]],
-    [0.32, [142, 80, 25]],
-    [0.48, [190, 110, 32]],
-    [0.64, [232, 152, 40]],
-    [0.8, [252, 202, 78]],
-    [0.93, [255, 238, 182]],
+    [0.0, [50, 29, 13]],
+    [0.16, [80, 45, 18]],
+    [0.32, [113, 62, 22]],
+    [0.48, [148, 84, 28]],
+    [0.64, [180, 108, 35]],
+    [0.8, [208, 141, 56]],
+    [0.93, [232, 182, 110]],
   ];
 
   function warmAt(l) {
@@ -131,16 +131,16 @@
         const cx = x * cellW + cellW / 2;
         const cy = y * cell + cell / 2 + 1;
 
-        /* halo: tiny cyan field outside the portrait */
+        /* halo: cyan/blue dust fading out around the portrait */
         if (radius > 0.5) {
-          const falloff = Math.max(0, 1 - (radius - 0.5) / 0.42);
-          if (Math.random() < 0.5 * falloff * falloff) {
-            const cyan = Math.random() < 0.62;
-            const alpha = (0.1 + 0.32 * falloff) * (0.6 + Math.random() * 0.4);
+          const falloff = Math.max(0, 1 - (radius - 0.5) / 0.26);
+          if (falloff > 0 && Math.random() < 0.9 * falloff * falloff) {
+            const cyan = Math.random() < 0.7;
+            const alpha = (0.2 + 0.5 * falloff) * (0.6 + Math.random() * 0.4);
             ctx.fillStyle = cyan
-              ? `rgba(95,208,240,${alpha})`
-              : `rgba(84,138,190,${alpha})`;
-            ctx.fillText(Math.random() < 0.7 ? "·" : ".", cx, cy);
+              ? `rgba(104,214,246,${alpha.toFixed(3)})`
+              : `rgba(78,132,214,${alpha.toFixed(3)})`;
+            ctx.fillText(Math.random() < 0.75 ? "·" : ".", cx, cy);
           }
           continue;
         }
@@ -152,22 +152,33 @@
         const g = data[i + 1];
         const b = data[i + 2];
 
-        /* drop the flat blue backdrop so the portrait sits on black */
+        /* flat blue backdrop → black, with blue dust gathering toward the edge */
         const dr = r - bg[0];
         const dg = g - bg[1];
         const db = b - bg[2];
-        if (dr * dr + dg * dg + db * db < 2100) continue;
+        if (dr * dr + dg * dg + db * db < 2100) {
+          const edge = Math.min(1, Math.max(0, (radius - 0.32) / 0.18));
+          if (edge > 0 && Math.random() < 0.42 * edge) {
+            const alpha = (0.14 + 0.34 * edge) * (0.6 + Math.random() * 0.4);
+            ctx.fillStyle =
+              Math.random() < 0.7
+                ? `rgba(104,214,246,${alpha.toFixed(3)})`
+                : `rgba(78,132,214,${alpha.toFixed(3)})`;
+            ctx.fillText("·", cx, cy);
+          }
+          continue;
+        }
 
         let lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 
         /* gentle lift so the face glows, without flattening the shadow range */
         const glow = Math.max(0, 1 - radius / 0.5);
-        lum = Math.min(1, lum * 0.94 + 0.06 + glow * 0.1);
+        lum = Math.min(1, lum * 0.9 + 0.03 + glow * 0.06);
 
         const glyph = pickGlyph(lum);
-        const shade = Math.pow(lum, 1.1);
+        const shade = Math.pow(lum, 1.35);
         const [wr, wg, wb] = warmAt(shade);
-        const alpha = 0.88 + Math.random() * 0.12;
+        const alpha = 0.72 + Math.random() * 0.18;
 
         ctx.fillStyle = `rgba(${wr},${wg},${wb},${alpha.toFixed(3)})`;
         ctx.fillText(glyph, cx, cy);
