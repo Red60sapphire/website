@@ -25,19 +25,37 @@
      Discord badges (real flags only — never invent achievements)
      ------------------------------------------------------------ */
 
-  const FLAG_BADGES = [
-    [1, "Discord Staff", null],
-    [2, "Partnered Server Owner", "3f9748e53446a137a052f3454e2de41e"],
-    [4, "HypeSquad Events", "8a88d63823d8a71cd5e390baa45efa02"],
-    [8, "Bug Hunter", "2717692c7dca7289b35297368a940dd0"],
-    [64, "HypeSquad Bravery", "8a88d63823d8a71cd5e390baa45efa02"],
-    [128, "HypeSquad Brilliance", "011940fd013da3f7fb926e4a1cd2e618"],
-    [256, "HypeSquad Balance", "3aa41de486fa12454c3761e8e223442e"],
-    [512, "Early Supporter", "7060786766c9c840eb3019e725d2b358"],
-    [16384, "Bug Hunter Gold", "3ae63761260f9f8b7c8f6f09f0f0ac1c"],
-    [65536, "Early Verified Developer", "6df5892e0f35b7634d1412ea2ef0c5ea"],
-    [4194304, "Active Developer", "6bdc42827a38498929a4920da12695d9"],
-  ];
+  const BADGE_ICONS = {
+    NITRO: ["2ba85e8026a8614b640c2837bcdfe21b", "Nitro"],
+    PARTNER: ["3f9748e53446a137a052f3454e2de41e", "Partnered Server Owner"],
+    HYPESQUAD_EVENTS: ["8a88d63823d8a71cd5e390baa45efa02", "HypeSquad Events"],
+    HYPESQUAD_BRAVERY: ["8a88d63823d8a71cd5e390baa45efa02", "HypeSquad Bravery"],
+    HYPESQUAD_BRILLIANCE: ["011940fd013da3f7fb926e4a1cd2e618", "HypeSquad Brilliance"],
+    HYPESQUAD_BALANCE: ["3aa41de486fa12454c3761e8e223442e", "HypeSquad Balance"],
+    BUG_HUNTER_LEVEL_1: ["2717692c7dca7289b35297368a940dd0", "Bug Hunter"],
+    BUG_HUNTER_LEVEL_2: ["3ae63761260f9f8b7c8f6f09f0f0ac1c", "Bug Hunter Gold"],
+    EARLY_SUPPORTER: ["7060786766c9c840eb3019e725d2b358", "Early Supporter"],
+    EARLY_VERIFIED_BOT_DEVELOPER: ["6df5892e0f35b7634d1412ea2ef0c5ea", "Early Verified Developer"],
+    VERIFIED_BOT_DEVELOPER: ["6df5892e0f35b7634d1412ea2ef0c5ea", "Verified Bot Developer"],
+    ACTIVE_DEVELOPER: ["6bdc42827a38498929a4920da12695d9", "Active Developer"],
+  };
+
+  /* bitmask fallback when the decoded profile is unavailable */
+  const FLAG_BITS = {
+    2: "PARTNER",
+    4: "HYPESQUAD_EVENTS",
+    8: "BUG_HUNTER_LEVEL_1",
+    64: "HYPESQUAD_BRAVERY",
+    128: "HYPESQUAD_BRILLIANCE",
+    256: "HYPESQUAD_BALANCE",
+    512: "EARLY_SUPPORTER",
+    16384: "BUG_HUNTER_LEVEL_2",
+    65536: "EARLY_VERIFIED_BOT_DEVELOPER",
+    4194304: "ACTIVE_DEVELOPER",
+  };
+
+  let badgeNames = null;
+  let lastUser = null;
 
   function badgeNode(src, title) {
     const span = document.createElement("span");
@@ -57,13 +75,23 @@
     if (!el) return;
     el.textContent = "";
 
-    const flags = user.public_flags || 0;
-    let count = 0;
+    /* prefer the decoded badge list; fall back to the raw bitmask */
+    let names = badgeNames;
+    if (!names) {
+      const flags = user.public_flags || 0;
+      names = Object.keys(FLAG_BITS)
+        .filter((bit) => (flags & Number(bit)) === Number(bit))
+        .map((bit) => FLAG_BITS[bit]);
+    }
 
-    for (const [bit, title, hash] of FLAG_BADGES) {
-      if (!hash || (flags & bit) !== bit) continue;
-      el.appendChild(badgeNode(`https://cdn.discordapp.com/badge-icons/${hash}.png`, title));
-      count++;
+    const seen = new Set();
+    for (const name of names) {
+      const entry = BADGE_ICONS[name];
+      if (!entry || seen.has(name)) continue;
+      seen.add(name);
+      el.appendChild(
+        badgeNode(`https://cdn.discordapp.com/badge-icons/${entry[0]}.png`, entry[1])
+      );
     }
 
     const guild = user.primary_guild;
@@ -75,16 +103,25 @@
           "Server tag"
         )
       );
-      count++;
     }
 
     for (const b of CFG.badges || []) {
       if (!b || !b.icon) continue;
       el.appendChild(badgeNode(b.icon, b.name || ""));
-      count++;
     }
+  }
 
-    el.dataset.count = String(count);
+  function loadBadges(id) {
+    fetch(`https://japi.rest/discord/v1/user/${id}`)
+      .then((r) => r.json())
+      .then((res) => {
+        const list = res && res.data && res.data.public_flags_array;
+        if (Array.isArray(list)) {
+          badgeNames = list;
+          if (lastUser) renderBadges(lastUser);
+        }
+      })
+      .catch(() => {});
   }
 
   /* ------------------------------------------------------------
@@ -415,6 +452,7 @@
     }
 
     renderBadges(user);
+    lastUser = user;
     document.title = name;
   }
 
@@ -446,6 +484,7 @@
         .catch(() => {});
 
     poll();
+    loadBadges(id);
     setInterval(poll, CFG.pollMs || 30000);
 
     let ws;
