@@ -1,56 +1,388 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Red60's Website</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Red60</title>
 
-    <meta name="description" content="My personal website and blog.">
-    <meta property="og:title" content="Red60's Website">
-    <meta property="og:url" content="https://red60.us">
-    <meta property="og:description" content="My personal website and blog.">
-    <meta property="og:image" content="https://red60.us/assets/img/icon.png">
-    <meta property="og:type" content="website">
-    <meta name="theme-color" content="#0a080f">
+    <meta name="description" content="Red60 — developer, security research and web projects." />
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" href="/assets/img/icon_96px.png" />
 
-    <link rel="stylesheet" href="/assets/css/main.css">
+    <meta property="og:title" content="Red60" />
+    <meta property="og:url" content="https://red60.us" />
+    <meta property="og:description" content="Red60 — developer, security research and web projects." />
+    <meta property="og:image" content="https://red60.us/assets/img/icon.png" />
+    <meta property="og:type" content="website" />
+
+    <script>
+      // restore the last album-art theme before paint, so there is no flash
+      try {
+        var t = JSON.parse(localStorage.getItem("red60:theme"));
+        if (t && /^#[0-9a-f]{6}$/i.test(t.a) && /^#[0-9a-f]{6}$/i.test(t.b)) {
+          var r = document.documentElement;
+          r.style.setProperty("--theme-a", t.a);
+          r.style.setProperty("--theme-b", t.b);
+        }
+      } catch (e) {}
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/css/site.css" />
   </head>
+
   <body>
-    <header>
-      <nav>
-        <a href="/" id="name_container">
-          <img id="site_logo" srcset="/assets/img/icon_96px.png 2x" src="/assets/img/icon_48px.png" width="48px" height="48px" alt="website logo">
-          <h1 id="site_name">Red60</h1>
-        </a>
-        <div id="links_container">
-          <a href="/">About</a>
-          <a href="/projects/">Projects</a>
-          <a href="/blog/">Blog</a>
+    <main class="shell">
+      <!-- ---------------------------------------------------- left -->
+      <aside class="col-left">
+        <section class="panel profile">
+          <div class="banner">
+            <img id="banner-img" src="/assets/img/icon.png" alt="" />
+          </div>
+
+          <div class="profile-body">
+            <div class="avatar-wrap">
+              <img class="avatar" id="avatar" src="/assets/img/icon_96px.png" alt="Red60" />
+              <span class="status" id="status" data-status="offline"></span>
+            </div>
+
+            <div class="name-row">
+              <h1 class="name" id="display-name">Red60</h1>
+              <span class="badge">DEV</span>
+            </div>
+            <p class="handle" id="handle">@Red60sapphire</p>
+
+            <div class="socials">
+              <a class="sq" href="https://discord.gg/yTmmCFv59Q" target="_blank" rel="noopener" title="Discord">
+                <img src="https://cdn.simpleicons.org/discord/5865F2" alt="Discord" />
+              </a>
+              <a class="sq" href="https://github.com/Red60sapphire" target="_blank" rel="noopener" title="GitHub">
+                <img src="https://cdn.simpleicons.org/github/ffffff" alt="GitHub" />
+              </a>
+              <a class="sq" href="mailto:red@red60.us" title="Email">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#c9c9c9" stroke-width="2">
+                  <rect x="2.5" y="4.5" width="19" height="15" rx="3" />
+                  <path d="m3.5 6.5 8.5 6 8.5-6" />
+                </svg>
+              </a>
+              <a class="sq" href="/blog/" title="Blog">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#c9c9c9" stroke-width="2">
+                  <path d="M4 5h16M4 12h16M4 19h10" />
+                </svg>
+              </a>
+            </div>
+
+            <div class="about">
+              <span class="label">About me</span>
+              <p class="about-text">
+                hi! i'm xRed (also known as Red60), a high school student with an interest in
+                programming, web development and browser security. i build <a href="/projects/">weird
+                web projects</a>, write up vulnerabilities i find, and occasionally port games to
+                places they should not run.
+              </p>
+
+              <div style="margin-top: 14px">
+                <span class="label">Stack</span>
+                <div class="stack">
+                  <a class="sq" href="https://developer.mozilla.org/docs/Web/HTML" target="_blank" rel="noopener" title="HTML">
+                    <img src="https://cdn.simpleicons.org/html5/E34F26" alt="HTML" />
+                  </a>
+                  <a class="sq" href="https://developer.mozilla.org/docs/Web/CSS" target="_blank" rel="noopener" title="CSS">
+                    <img src="https://cdn.simpleicons.org/css/663399" alt="CSS" />
+                  </a>
+                  <a class="sq" href="https://developer.mozilla.org/docs/Web/JavaScript" target="_blank" rel="noopener" title="JavaScript">
+                    <img src="https://cdn.simpleicons.org/javascript/F7DF1E" alt="JavaScript" />
+                  </a>
+                  <a class="sq" href="https://www.typescriptlang.org" target="_blank" rel="noopener" title="TypeScript">
+                    <img src="https://cdn.simpleicons.org/typescript/3178C6" alt="TypeScript" />
+                  </a>
+                  <a class="sq" href="https://nodejs.org" target="_blank" rel="noopener" title="Node.js">
+                    <img src="https://cdn.simpleicons.org/nodedotjs/5FA04E" alt="Node.js" />
+                  </a>
+                  <a class="sq" href="https://react.dev" target="_blank" rel="noopener" title="React">
+                    <img src="https://cdn.simpleicons.org/react/61DAFB" alt="React" />
+                  </a>
+                  <a class="sq" href="https://www.python.org" target="_blank" rel="noopener" title="Python">
+                    <img src="https://cdn.simpleicons.org/python/3776AB" alt="Python" />
+                  </a>
+                  <a class="sq" href="https://git-scm.com" target="_blank" rel="noopener" title="Git">
+                    <img src="https://cdn.simpleicons.org/git/F05032" alt="Git" />
+                  </a>
+                  <a class="sq" href="https://www.linux.org" target="_blank" rel="noopener" title="Linux">
+                    <img src="https://cdn.simpleicons.org/linux/FCC624" alt="Linux" />
+                  </a>
+                  <a class="sq" href="https://www.cloudflare.com" target="_blank" rel="noopener" title="Cloudflare">
+                    <img src="https://cdn.simpleicons.org/cloudflare/F38020" alt="Cloudflare" />
+                  </a>
+                  <a class="sq" href="https://www.mysql.com" target="_blank" rel="noopener" title="MySQL">
+                    <img src="https://cdn.simpleicons.org/mysql/4479A1" alt="MySQL" />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-foot">
+              <div class="contact">
+                <a class="sq" href="https://discord.gg/yTmmCFv59Q" target="_blank" rel="noopener" title="Discord">
+                  <img src="https://cdn.simpleicons.org/discord/5865F2" alt="Discord" />
+                </a>
+                <a class="sq" href="https://github.com/Red60sapphire" target="_blank" rel="noopener" title="GitHub">
+                  <img src="https://cdn.simpleicons.org/github/ffffff" alt="GitHub" />
+                </a>
+                <a class="sq" href="mailto:red@red60.us" title="Email">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#c9c9c9" stroke-width="2">
+                    <rect x="2.5" y="4.5" width="19" height="15" rx="3" />
+                    <path d="m3.5 6.5 8.5 6 8.5-6" />
+                  </svg>
+                </a>
+              </div>
+
+              <span class="views" id="views" title="page views">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span id="views-count">—</span>
+              </span>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <!-- ---------------------------------------------------- right -->
+      <div class="col-right">
+        <section class="panel presence">
+          <div class="presence-head">
+            <span class="brand-dot">
+              <img src="https://cdn.simpleicons.org/spotify/1DB954" alt="" />
+            </span>
+            <span class="label">Spotify</span>
+          </div>
+          <div class="presence-body" id="spotify-body">
+            <p class="empty-text">not listening to anything right now</p>
+          </div>
+        </section>
+
+        <section class="panel presence">
+          <div class="presence-head">
+            <span class="label">Games</span>
+          </div>
+          <div class="presence-body" id="games-body">
+            <p class="empty-text">not playing anything right now.</p>
+          </div>
+        </section>
+
+        <div class="card-grid">
+          <a class="mini-card" href="https://github.com/Red60sapphire/redos" target="_blank" rel="noopener">
+            <span class="tile" style="--t1: #3b1d6e; --t2: #0d0a1f">R</span>
+            <span class="meta">
+              <span class="mini-title">redos <span class="role">owner</span></span>
+              <span class="mini-sub">a web os with full linux emulation</span>
+            </span>
+            <span class="ghost-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 4h6v6M20 4l-8.5 8.5M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+              </svg>
+            </span>
+          </a>
+
+          <a class="mini-card" href="https://github.com/Red60sapphire/doom-in-pdf" target="_blank" rel="noopener">
+            <span class="tile" style="--t1: #7a1414; --t2: #180808">D</span>
+            <span class="meta">
+              <span class="mini-title">doom-in-pdf <span class="role">owner</span></span>
+              <span class="mini-sub">doom (1993), running inside a pdf</span>
+            </span>
+            <span class="ghost-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 4h6v6M20 4l-8.5 8.5M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+              </svg>
+            </span>
+          </a>
         </div>
-      </nav>
-    </header>
 
-    <div id="content_wrapper">
-      <div id="article_div">
-        
-  <h2>Hello!</h2>
-  <p>I'm Red, a high school student with an interest in programming and web development.</p>
+        <section class="panel list-panel">
+          <span class="label">Open source</span>
+          <div class="list">
+            <a class="row" href="https://github.com/OGsWorkshop/Infrared" target="_blank" rel="noopener">
+              <img src="https://github.com/OGsWorkshop.png?size=64" alt="" loading="lazy" />
+              <span class="meta">
+                <span class="row-title">infrared <span>web</span></span>
+                <span class="row-sub">a modern web proxy with games, apps and ad-free deployment</span>
+              </span>
+              <span class="ghost-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m8 6-6 6 6 6M16 6l6 6-6 6" />
+                </svg>
+              </span>
+            </a>
 
-  <p>For a list of my projects, take a look at <a href="/projects">/projects</a> on my Github which is linked below.</p>
+            <a class="row" href="https://github.com/Red60sapphire/doom-in-pdf" target="_blank" rel="noopener">
+              <img src="https://github.com/Red60sapphire.png?size=64" alt="" loading="lazy" />
+              <span class="meta">
+                <span class="row-title">doom-in-pdf <span>port</span></span>
+                <span class="row-sub">a port of doom (1993) that runs inside a pdf file</span>
+              </span>
+              <span class="ghost-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m8 6-6 6 6 6M16 6l6 6-6 6" />
+                </svg>
+              </span>
+            </a>
 
-  <h2>Contact</h2>
-  <ul>
-    <li>Email - <a href="mailto:red@red60.us"><code>Red@red60.us</code></a></li>
-    <li>Github - <a href="https://github.com/Red60sapphire"><code>@Red60sapphire</code></a></li>
-    <li>Discord - <a href="discord.gg/yTmmCFv59Q"><code>@music.ly</code></a></li>
-  </ul>
+            <a class="row" href="https://github.com/Red60sapphire/redos" target="_blank" rel="noopener">
+              <img src="https://github.com/Red60sapphire.png?size=64" alt="" loading="lazy" />
+              <span class="meta">
+                <span class="row-title">redos <span>os</span></span>
+                <span class="row-sub">a web "os" and dev environment with linux emulation</span>
+              </span>
+              <span class="ghost-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m8 6-6 6 6 6M16 6l6 6-6 6" />
+                </svg>
+              </span>
+            </a>
 
+            <a class="row" href="https://zynema.co" target="_blank" rel="noopener">
+              <span class="tile" style="--t1: #24324f; --t2: #0a1020; width: 30px; height: 30px; border-radius: 8px; font-size: 12px">Z</span>
+              <span class="meta">
+                <span class="row-title">zynema <span>web</span></span>
+                <span class="row-sub">a browser-based movie and tv streaming platform</span>
+              </span>
+              <span class="ghost-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 4h6v6M20 4l-8.5 8.5M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+                </svg>
+              </span>
+            </a>
+          </div>
+        </section>
+
+        <section class="panel list-panel">
+          <span class="label">Writing</span>
+          <div class="list">
+            <a class="row" href="/blog/posts/chrome_sandbox_escape.html">
+              <img src="/assets/img/icon_48px.png" alt="" loading="lazy" />
+              <span class="meta">
+                <span class="row-title">escaping the chrome sandbox through devtools <span>10/16/24</span></span>
+                <span class="row-sub">vulnerability research</span>
+              </span>
+              <span class="ghost-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </span>
+            </a>
+
+            <a class="row" href="/blog/posts/echoanywhere.html">
+              <img src="/assets/img/icon_48px.png" alt="" loading="lazy" />
+              <span class="meta">
+                <span class="row-title">abusing the chromebook perks system <span>11/18/23</span></span>
+                <span class="row-sub">exploit poc</span>
+              </span>
+              <span class="ghost-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </span>
+            </a>
+
+            <a class="row" href="/blog/posts/securly_bypass.html">
+              <img src="/assets/img/icon_48px.png" alt="" loading="lazy" />
+              <span class="meta">
+                <span class="row-title">bypassing securly by manipulating the url <span>10/26/23</span></span>
+                <span class="row-sub">security bypass</span>
+              </span>
+              <span class="ghost-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </span>
+            </a>
+
+            <a class="row" href="/blog/posts/dextensify.html">
+              <img src="/assets/img/icon_48px.png" alt="" loading="lazy" />
+              <span class="meta">
+                <span class="row-title">dextensify: disabling chrome extensions <span>08/20/23</span></span>
+                <span class="row-sub">vulnerability poc</span>
+              </span>
+              <span class="ghost-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </span>
+            </a>
+
+            <a class="row" href="/blog/">
+              <span class="meta">
+                <span class="row-title" style="color: var(--label)">read all posts</span>
+              </span>
+              <span class="ghost-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </span>
+            </a>
+          </div>
+        </section>
+
+        <section class="panel list-panel">
+          <span class="label">Projects / Organizations</span>
+          <div class="chips">
+            <a class="chip" href="https://github.com/OGsWorkshop" target="_blank" rel="noopener">
+              <img src="https://github.com/OGsWorkshop.png?size=32" alt="" loading="lazy" />
+              o g s workshop <em>contributor</em>
+            </a>
+            <a class="chip" href="https://github.com/OGsWorkshop/Infrared" target="_blank" rel="noopener">
+              <img src="https://github.com/OGsWorkshop.png?size=32" alt="" loading="lazy" />
+              infrared <em>contributor</em>
+            </a>
+            <a class="chip" href="https://github.com/Red60sapphire/redos" target="_blank" rel="noopener">
+              <img src="https://github.com/Red60sapphire.png?size=32" alt="" loading="lazy" />
+              redos <em>owner</em>
+            </a>
+            <a class="chip" href="https://github.com/Red60sapphire/doom-in-pdf" target="_blank" rel="noopener">
+              <img src="https://github.com/Red60sapphire.png?size=32" alt="" loading="lazy" />
+              doom-in-pdf <em>owner</em>
+            </a>
+            <a class="chip" href="https://zynema.co" target="_blank" rel="noopener">
+              <span class="tile" style="--t1: #24324f; --t2: #0a1020; width: 14px; height: 14px; border-radius: 4px; font-size: 8px">Z</span>
+              zynema <em>owner</em>
+            </a>
+            <a class="chip" href="https://github.com/Red60sapphire/website" target="_blank" rel="noopener">
+              <img src="https://github.com/Red60sapphire.png?size=32" alt="" loading="lazy" />
+              website <em>owner</em>
+            </a>
+          </div>
+        </section>
+
+        <section class="panel list-panel">
+          <span class="label">Webports</span>
+          <div class="card-grid" style="margin-top: 10px">
+            <a class="port" href="https://github.com/Red60sapphire/doom-in-pdf" target="_blank" rel="noopener">
+              <span class="tile" style="--t1: #7a1414; --t2: #180808; width: 62px; height: 40px; border-radius: 8px">D</span>
+              <span class="meta">
+                <span class="port-name">doom in a pdf</span>
+                <span class="port-status ok">playable</span>
+              </span>
+            </a>
+            <a class="port" href="https://github.com/Red60sapphire/redos" target="_blank" rel="noopener">
+              <span class="tile" style="--t1: #3b1d6e; --t2: #0d0a1f; width: 62px; height: 40px; border-radius: 8px">R</span>
+              <span class="meta">
+                <span class="port-name">redos</span>
+                <span class="port-status wip">work in progress</span>
+              </span>
+            </a>
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
 
-    <div id="footer">
-      <p>Copyright &copy; 2026 Red60. All rights reserved. The source code for this website can be found on my <a href="https://github.com/Red60sapphire/website">Github</a>.</p>
-    </div>
-
+    <script src="/assets/js/config.js"></script>
+    <script src="/assets/js/site.js"></script>
   </body>
 </html>

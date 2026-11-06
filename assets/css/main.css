@@ -1,25 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;700&display=swap');
 
 :root {
-  --bg-primary: #08060b;
-  --bg-secondary: #0d0a14;
-  --glass-bg: rgba(15, 11, 22, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.05);
-  --glass-border-hover: rgba(255, 59, 92, 0.25);
-  
+  --theme-a: #ff4d8d;
+  --theme-b: #7b5cff;
+
+  --bg-primary: #000000;
+  --bg-secondary: #0b0b0b;
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.16);
+
   --text-primary: #ffffff;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  
-  --accent-red: #ff3b5c;
-  --accent-purple: #8b5cf6;
-  --accent-blue: #3b82f6;
-  --accent-gradient: linear-gradient(135deg, #ff3b5c 0%, #8b5cf6 100%);
-  --accent-glow: rgba(255, 59, 92, 0.2);
-  
-  --font-sans: "Inter", sans-serif;
-  --font-heading: "Outfit", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --text-secondary: #d6d6d6;
+  --text-muted: #8a8a8a;
+
+  --accent: #f2c6d6;
+  --accent-red: var(--accent);
+  --accent-purple: var(--theme-b);
+  --accent-gradient: linear-gradient(135deg, var(--theme-a), var(--theme-b));
+  --accent-glow: rgba(255, 255, 255, 0.08);
+
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
 }
 
 * {
@@ -57,9 +60,9 @@ body::before {
   left: -10%;
   width: 120%;
   height: 120%;
-  background: 
-    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 45%),
-    radial-gradient(circle at 15% 85%, rgba(255, 59, 92, 0.07) 0%, transparent 45%);
+  background:
+    radial-gradient(80% 60% at 0% 0%, color-mix(in oklab, var(--theme-a) 10%, transparent), transparent 70%),
+    radial-gradient(80% 60% at 100% 100%, color-mix(in oklab, var(--theme-b) 10%, transparent), transparent 70%);
   z-index: -1;
   pointer-events: none;
 }
@@ -80,8 +83,8 @@ body::before {
 }
 
 ::selection {
-  background: var(--accent-red);
-  color: #fff;
+  background: color-mix(in oklab, var(--theme-a) 70%, white);
+  color: #000;
 }
 
 /* Links */
@@ -94,8 +97,8 @@ a {
 }
 
 a:hover {
-  color: #ff607c;
-  text-shadow: 0 0 8px rgba(255, 59, 92, 0.3);
+  color: #fff;
+  text-shadow: 0 0 10px color-mix(in oklab, var(--theme-a) 35%, transparent);
 }
 
 /* Headings */
@@ -158,7 +161,7 @@ pre {
 code {
   padding: 0.15rem 0.4rem;
   font-size: 0.9em;
-  color: #ff8ca3;
+  color: color-mix(in oklab, var(--theme-a) 45%, #ffffff);
 }
 
 pre {
@@ -200,7 +203,7 @@ header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(8, 6, 11, 0.75);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--glass-border);
@@ -310,12 +313,17 @@ nav {
 #article_div {
   width: 100%;
   padding: 2.5rem;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--theme-a) 13%, #0b0b0b),
+    color-mix(in oklab, var(--theme-b) 13%, #0b0b0b)
+  );
+  border: 1px solid color-mix(in oklab, var(--theme-a) 26%, #ffffff1a);
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 32px -18px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  background-clip: padding-box;
 }
 
 #article_div:hover {
@@ -334,7 +342,7 @@ nav {
 #footer {
   flex-shrink: 0;
   border-top: 1px solid var(--glass-border);
-  background: rgba(8, 6, 11, 0.85);
+  background: rgba(0, 0, 0, 0.6);
   padding: 1.5rem 1.5rem;
   text-align: center;
   backdrop-filter: blur(8px);
@@ -661,8 +669,8 @@ nav {
 
 .blog-card:hover {
   transform: translateX(4px);
-  border-color: var(--accent-red);
-  box-shadow: 0 6px 20px rgba(255, 59, 92, 0.04);
+  border-color: color-mix(in oklab, var(--theme-a) 55%, transparent);
+  box-shadow: 0 6px 24px -12px #000;
 }
 
 .blog-meta {
