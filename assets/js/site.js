@@ -1,6 +1,5 @@
 /*
- * red60.us — presence + theme
- * Lanyard gives us Discord profile / Spotify / activity data over REST + a websocket.
+ * red60.us — Discord presence, profile and page theme.
  */
 (() => {
   const CFG = window.SITE_CONFIG || {};
@@ -9,6 +8,7 @@
 
   const els = {
     avatar: $("avatar"),
+    deco: $("avatar-deco"),
     status: $("status"),
     name: $("display-name"),
     handle: $("handle"),
@@ -18,13 +18,14 @@
     games: $("games-body"),
     views: $("views-count"),
     viewsWrap: $("views"),
+    chipAvatar: $("chip-avatar"),
   };
 
   /* ------------------------------------------------------------
-     discord badges
+     Discord badges (real flags only — never invent achievements)
      ------------------------------------------------------------ */
 
-  const BADGES = [
+  const FLAG_BADGES = [
     [1, "Discord Staff", null],
     [2, "Partnered Server Owner", "3f9748e53446a137a052f3454e2de41e"],
     [4, "HypeSquad Events", "8a88d63823d8a71cd5e390baa45efa02"],
@@ -38,26 +39,51 @@
     [4194304, "Active Developer", "6bdc42827a38498929a4920da12695d9"],
   ];
 
+  function badgeNode(src, title) {
+    const span = document.createElement("span");
+    span.className = "badge";
+    span.title = title;
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = title;
+    img.loading = "lazy";
+    img.onerror = () => span.remove();
+    span.appendChild(img);
+    return span;
+  }
+
   function renderBadges(user) {
     const el = els.badges;
     if (!el) return;
+    el.textContent = "";
 
     const flags = user.public_flags || 0;
-    const items = BADGES.filter(([bit, , hash]) => hash && (flags & bit) === bit).map(
-      ([, name, hash]) => ({ name, src: `https://cdn.discordapp.com/badge-icons/${hash}.png` })
-    );
+    let count = 0;
 
-    (CFG.badges || []).forEach((b) => b && b.icon && items.push({ name: b.name || "", src: b.icon }));
-
-    if (!items.length) {
-      el.style.display = "none";
-      return;
+    for (const [bit, title, hash] of FLAG_BADGES) {
+      if (!hash || (flags & bit) !== bit) continue;
+      el.appendChild(badgeNode(`https://cdn.discordapp.com/badge-icons/${hash}.png`, title));
+      count++;
     }
 
-    el.style.display = "";
-    el.innerHTML = items
-      .map((b) => `<img class="badge-img" src="${b.src}" alt="" title="${b.name}" loading="lazy">`)
-      .join("");
+    const guild = user.primary_guild;
+    if (guild && guild.identity_enabled && guild.badge && guild.identity_guild_id) {
+      el.appendChild(
+        badgeNode(
+          `https://cdn.discordapp.com/clan-badges/${guild.identity_guild_id}/${guild.badge}.png?size=32`,
+          "Server tag"
+        )
+      );
+      count++;
+    }
+
+    for (const b of CFG.badges || []) {
+      if (!b || !b.icon) continue;
+      el.appendChild(badgeNode(b.icon, b.name || ""));
+      count++;
+    }
+
+    el.dataset.count = String(count);
   }
 
   /* ------------------------------------------------------------
@@ -66,7 +92,7 @@
 
   const STORE_KEY = "red60:theme";
 
-  function setTheme(a, b, persist = true) {
+  function setTheme(a, b, persist) {
     root.style.setProperty("--theme-a", a);
     root.style.setProperty("--theme-b", b);
     if (!persist) return;
@@ -79,6 +105,8 @@
     setTheme(CFG.theme.a, CFG.theme.b, false);
   }
 
+  const hex = (n) => Math.round(n).toString(16).padStart(2, "0");
+
   function hsl(h, s, l) {
     h = ((h % 360) + 360) % 360;
     s /= 100;
@@ -86,8 +114,7 @@
     const k = (n) => (n + h / 30) % 12;
     const a = s * Math.min(l, 1 - l);
     const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-    const hex = (n) => Math.round(n * 255).toString(16).padStart(2, "0");
-    return "#" + hex(f(0)) + hex(f(8)) + hex(f(4));
+    return "#" + hex(f(0) * 255) + hex(f(8) * 255) + hex(f(4) * 255);
   }
 
   function rgbToHsl(r, g, b) {
@@ -107,63 +134,46 @@
     return [h, s * 100, l * 100];
   }
 
-  async function paletteFrom(url) {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.decoding = "async";
-    img.src = url;
-    if (img.decode) await img.decode();
-    else
-      await new Promise((res, rej) => {
-        img.onload = res;
-        img.onerror = rej;
-      });
-
-    const size = 40;
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = size;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0, size, size);
-
-    let data;
-    try {
-      data = ctx.getImageData(0, 0, size, size).data;
-    } catch (e) {
-      return null; // tainted canvas
-    }
-
-    const buckets = new Map();
-    for (let i = 0; i < data.length; i += 4) {
-      const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
-      if (s < 28 || l < 12 || l > 88) continue;
-      const key = Math.floor(h / 30) % 12;
-      const weight = s / 100;
-      const cur = buckets.get(key) || { w: 0, h: 0, s: 0 };
-      cur.w += weight;
-      cur.h += h * weight;
-      cur.s += s * weight;
-      buckets.set(key, cur);
-    }
-
-    if (!buckets.size) return null;
-
-    const ranked = [...buckets.values()].sort((x, y) => y.w - x.w);
-    const first = ranked[0];
-    const second = ranked.find((b) => Math.abs(b.h / b.w - first.h / first.w) > 40) || first;
-
-    const h1 = first.h / first.w;
-    const h2 = second.h / second.w;
-    return {
-      a: hsl(h1, 42, 84),
-      b: hsl(h2, 38, 52),
-    };
-  }
-
   async function themeFromImage(url) {
     if (!url) return;
     try {
-      const palette = await paletteFrom(url);
-      if (palette) setTheme(palette.a, palette.b);
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = url;
+      if (img.decode) await img.decode();
+      else await new Promise((res, rej) => ((img.onload = res), (img.onerror = rej)));
+
+      const size = 32;
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, size, size);
+
+      let data;
+      try {
+        data = ctx.getImageData(0, 0, size, size).data;
+      } catch (e) {
+        return;
+      }
+
+      const buckets = new Map();
+      for (let i = 0; i < data.length; i += 4) {
+        const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
+        if (s < 30 || l < 14 || l > 86) continue;
+        const key = Math.floor(h / 30) % 12;
+        const w = s / 100;
+        const cur = buckets.get(key) || { w: 0, h: 0 };
+        cur.w += w;
+        cur.h += h * w;
+        buckets.set(key, cur);
+      }
+
+      if (!buckets.size) return;
+      const ranked = [...buckets.values()].sort((x, y) => y.w - x.w);
+      const first = ranked[0];
+      const second = ranked.find((b) => Math.abs(b.h / b.w - first.h / first.w) > 40) || first;
+
+      setTheme(hsl(first.h / first.w, 46, 72), hsl(second.h / second.w, 40, 58), true);
     } catch (e) {
       /* keep current theme */
     }
@@ -186,16 +196,16 @@
 
   function elapsed(start) {
     if (!start) return "";
-    const total = Math.floor((Date.now() - start) / 1000);
+    const total = Math.max(0, Math.floor((Date.now() - start) / 1000));
     const h = Math.floor(total / 3600);
     const m = Math.floor((total % 3600) / 60);
     if (h) return `${h}h ${m}m`;
     if (m) return `${m}m`;
-    return `${Math.max(total, 0)}s`;
+    return `${total}s`;
   }
 
   function avatarUrl(user) {
-    if (!user || !user.avatar) return "/assets/img/icon_96px.png";
+    if (!user || !user.avatar) return "/assets/img/avatar.png";
     const ext = user.avatar.startsWith("a_") ? "gif" : "png";
     return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${ext}?size=256`;
   }
@@ -215,15 +225,10 @@
     return "";
   }
 
-  function clear(el) {
-    while (el.firstChild) el.removeChild(el.firstChild);
-  }
-
   /* ------------------------------------------------------------
      spotify
      ------------------------------------------------------------ */
 
-  let currentTrack = null;
   let ticker = null;
 
   function renderSpotify(track) {
@@ -231,18 +236,17 @@
     if (!body) return;
 
     if (!track) {
-      currentTrack = null;
-      body.innerHTML = '<p class="empty-text">not listening to anything right now</p>';
+      clearInterval(ticker);
+      body.innerHTML = '<p class="empty">not listening to anything right now</p>';
       return;
     }
 
-    currentTrack = track;
     const start = track.timestamps?.start || 0;
     const end = track.timestamps?.end || 0;
 
     body.innerHTML = `
       <div class="track">
-        <img class="track-art" id="sp-art" src="${track.album_art_url}" alt="" loading="lazy" crossorigin="anonymous">
+        <img class="track-art" src="${track.album_art_url}" alt="" crossorigin="anonymous" />
         <div class="track-meta">
           <a class="track-name" id="sp-name" href="https://open.spotify.com/track/${track.track_id}" target="_blank" rel="noopener"></a>
           <div class="track-artists" id="sp-artist"></div>
@@ -260,19 +264,17 @@
     themeFromImage(track.album_art_url);
 
     clearInterval(ticker);
-    tick();
-    ticker = setInterval(tick, 1000);
-
-    function tick() {
+    const tick = () => {
       const bar = $("sp-bar");
       const cur = $("sp-cur");
       if (!bar || !cur) return clearInterval(ticker);
-      const now = Date.now();
       const span = Math.max(end - start, 1);
-      const pct = Math.min(Math.max((now - start) / span, 0), 1);
+      const pct = Math.min(Math.max((Date.now() - start) / span, 0), 1);
       bar.style.width = (pct * 100).toFixed(2) + "%";
-      cur.textContent = clock(now - start);
-    }
+      cur.textContent = clock(Date.now() - start);
+    };
+    tick();
+    ticker = setInterval(tick, 1000);
   }
 
   /* ------------------------------------------------------------
@@ -288,35 +290,54 @@
     );
 
     if (!games.length) {
-      body.innerHTML = '<p class="empty-text">not playing anything right now.</p>';
+      body.innerHTML = '<p class="empty">not playing anything right now.</p>';
       return;
     }
 
-    body.innerHTML = games
-      .slice(0, 3)
-      .map((a) => {
-        const img = activityImage(a);
-        const detail = a.details || a.state || "";
-        const since = a.timestamps?.start ? elapsed(a.timestamps.start) : "";
-        return `
-        <div class="game">
-          ${img ? `<img class="game-icon" src="${img}" alt="" loading="lazy" onerror="this.style.display='none'">` : ""}
-          <div style="min-width:0">
-            <div class="game-name"></div>
-            ${detail ? '<div class="game-detail"></div>' : ""}
-            ${since ? `<div class="game-sub">${since} elapsed</div>` : ""}
-          </div>
-        </div>`;
-      })
-      .join("");
+    body.innerHTML = "";
+    for (const g of games.slice(0, 3)) {
+      const img = activityImage(g);
+      const detail = g.details || g.state || "";
+      const since = g.timestamps?.start ? elapsed(g.timestamps.start) : "";
 
-    [...body.querySelectorAll(".game")].forEach((node, i) => {
-      const a = games[i];
-      node.querySelector(".game-name").textContent = a.name;
-      const detail = a.details || a.state || "";
-      const detailEl = node.querySelector(".game-detail");
-      if (detailEl && detail) detailEl.textContent = detail;
-    });
+      const row = document.createElement("div");
+      row.className = "game";
+
+      if (img) {
+        const icon = document.createElement("img");
+        icon.className = "game-icon";
+        icon.src = img;
+        icon.alt = "";
+        icon.loading = "lazy";
+        icon.onerror = () => icon.remove();
+        row.appendChild(icon);
+      }
+
+      const meta = document.createElement("div");
+      meta.className = "game-body";
+
+      const name = document.createElement("div");
+      name.className = "game-name";
+      name.textContent = g.name;
+      meta.appendChild(name);
+
+      if (detail) {
+        const d = document.createElement("div");
+        d.className = "game-detail";
+        d.textContent = detail;
+        meta.appendChild(d);
+      }
+
+      if (since) {
+        const s = document.createElement("div");
+        s.className = "game-sub";
+        s.textContent = `${since} elapsed`;
+        meta.appendChild(s);
+      }
+
+      row.appendChild(meta);
+      body.appendChild(row);
+    }
 
     const first = activityImage(games[0]);
     if (first) themeFromImage(first);
@@ -329,16 +350,41 @@
   function renderUser(data) {
     const user = data.discord_user || {};
     const name = CFG.displayName || user.global_name || user.display_name || user.username || "Red60";
-    const handle = "@" + (user.username || "Red60sapphire");
 
-    if (els.name) els.name.textContent = name;
-    if (els.handle) els.handle.textContent = handle;
-    if (els.status) els.status.dataset.status = data.discord_status || "offline";
-    if (els.avatar && (CFG.avatar || user.avatar)) {
-      els.avatar.src = CFG.avatar || avatarUrl(user);
+    if (els.name) {
+      els.name.textContent = name;
+
+      const styles = user.display_name_styles;
+      const colors = styles && Array.isArray(styles.colors) ? styles.colors : [];
+      if (colors.length === 2) {
+        const toHex = (n) => "#" + n.toString(16).padStart(6, "0");
+        els.name.style.setProperty("--name-a", toHex(colors[0]));
+        els.name.style.setProperty("--name-b", toHex(colors[1]));
+        els.name.classList.add("styled");
+      }
     }
+
+    if (els.handle) els.handle.textContent = "@" + (user.username || "Red60sapphire");
+
+    if (els.status) {
+      const state = data.discord_status || "offline";
+      els.status.dataset.status = state;
+      els.status.title = state;
+    }
+
+    const src = CFG.avatar || avatarUrl(user);
+    if (els.avatar && (CFG.avatar || user.avatar)) els.avatar.src = src;
+    if (els.chipAvatar) els.chipAvatar.src = src;
+
+    const deco = user.avatar_decoration_data && user.avatar_decoration_data.asset;
+    if (els.deco && deco) {
+      els.deco.src = `https://cdn.discordapp.com/avatar-decoration-presets/${deco}.png`;
+      els.deco.hidden = false;
+      els.deco.onerror = () => (els.deco.hidden = true);
+    }
+
     renderBadges(user);
-    document.title = CFG.displayName || name;
+    document.title = name;
   }
 
   function renderPresence(data) {
@@ -387,7 +433,10 @@
         if (msg.op === 1) {
           const interval = msg.d.heartbeat_interval;
           clearInterval(heartbeat);
-          heartbeat = setInterval(() => ws.readyState === 1 && ws.send(JSON.stringify({ op: 3 })), interval);
+          heartbeat = setInterval(
+            () => ws.readyState === 1 && ws.send(JSON.stringify({ op: 3 })),
+            interval
+          );
           ws.send(JSON.stringify({ op: 2, d: { subscribe_to_id: id } }));
         } else if (msg.op === 0) {
           retry = 0;
@@ -429,11 +478,7 @@
      boot
      ------------------------------------------------------------ */
 
-  if (CFG.banner) {
-    if (els.banner) els.banner.src = CFG.banner;
-  } else if (els.banner) {
-    els.banner.style.display = "none";
-  }
+  if (els.banner && CFG.banner) els.banner.src = CFG.banner;
 
   connect();
   counter();

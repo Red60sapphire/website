@@ -7,7 +7,7 @@ window.SITE_CONFIG = {
   discordId: "1248841609567666197",
 
   // Fallback theme (used until presence loads a colour from album art).
-  theme: { a: "#ff4d8d", b: "#7b5cff" },
+  theme: { a: "#5aa9ff", b: "#7aa2ff" },
 
   // Optional overrides. Leave empty to use Discord / local assets.
   banner: "/assets/img/banner.png",
