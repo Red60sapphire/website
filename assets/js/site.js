@@ -70,7 +70,8 @@
     if (guild && guild.identity_enabled && guild.badge && guild.identity_guild_id) {
       el.appendChild(
         badgeNode(
-          `https://cdn.discordapp.com/clan-badges/${guild.identity_guild_id}/${guild.badge}.png?size=32`,
+          CFG.clanBadge ||
+            `https://cdn.discordapp.com/clan-badges/${guild.identity_guild_id}/${guild.badge}.png?size=32`,
           "Server tag"
         )
       );
@@ -281,6 +282,46 @@
      games
      ------------------------------------------------------------ */
 
+  /* known activity icons when Discord sends no artwork */
+  const GAME_ICONS = {
+    "363445589247131668": "roblox",
+  };
+
+  function gameIcon(activity) {
+    const src = activityImage(activity);
+
+    if (src) {
+      const img = document.createElement("img");
+      img.className = "game-icon";
+      img.src = src;
+      img.alt = "";
+      img.loading = "lazy";
+      img.onerror = () => img.replaceWith(fallbackIcon());
+      return img;
+    }
+
+    const slug = GAME_ICONS[activity.application_id];
+    if (slug) {
+      const img = document.createElement("img");
+      img.className = "game-icon game-icon--brand";
+      img.src = `/assets/icons/${slug}.svg`;
+      img.alt = "";
+      img.loading = "lazy";
+      img.onerror = () => img.replaceWith(fallbackIcon());
+      return img;
+    }
+
+    return fallbackIcon();
+  }
+
+  function fallbackIcon() {
+    const span = document.createElement("span");
+    span.className = "game-icon game-icon--fallback";
+    span.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6.5 8h11a4.5 4.5 0 0 1 4.4 5.4l-.5 2.7a3 3 0 0 1-5.2 1.5L14.8 16H9.2l-1.4 1.6a3 3 0 0 1-5.2-1.5l-.5-2.7A4.5 4.5 0 0 1 6.5 8Z"/><path d="M7.5 11.5v3M6 13h3M16 12h.01M18 14h.01"/></svg>';
+    return span;
+  }
+
   function renderGames(activities) {
     const body = els.games;
     if (!body) return;
@@ -296,22 +337,12 @@
 
     body.innerHTML = "";
     for (const g of games.slice(0, 3)) {
-      const img = activityImage(g);
       const detail = g.details || g.state || "";
       const since = g.timestamps?.start ? elapsed(g.timestamps.start) : "";
 
       const row = document.createElement("div");
       row.className = "game";
-
-      if (img) {
-        const icon = document.createElement("img");
-        icon.className = "game-icon";
-        icon.src = img;
-        icon.alt = "";
-        icon.loading = "lazy";
-        icon.onerror = () => icon.remove();
-        row.appendChild(icon);
-      }
+      row.appendChild(gameIcon(g));
 
       const meta = document.createElement("div");
       meta.className = "game-body";

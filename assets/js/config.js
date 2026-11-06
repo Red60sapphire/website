@@ -21,6 +21,9 @@ window.SITE_CONFIG = {
   // Optional extra Discord-style badges: [{ name: "Nitro", icon: "url" }]
   badges: [],
 
+  // Server-tag badge. Cached locally so it always renders.
+  clanBadge: "/assets/img/clan-badge.png",
+
   // Presence refresh. Lanyard's socket updates instantly; this is a fallback poll.
   pollMs: 30000,
 
