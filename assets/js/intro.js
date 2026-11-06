@@ -1,5 +1,5 @@
 /*
- * intro — the avatar rendered as a field of characters; click to zoom through.
+ * intro — the avatar rendered as a dense ASCII portrait; click to zoom through.
  */
 (() => {
   const CFG = window.SITE_CONFIG || {};
@@ -31,8 +31,52 @@
 
   document.body.classList.add("intro-lock");
 
-  const RAMP = ["·", ":", ";", "+", "*", "x", "#", "%", "@"];
-  const COLS = 64;
+  /* glyph bands — shadows are dense, mids carry detail, highlights go sparse */
+  const BANDS = [
+    [0.36, "#%&@8"],
+    [0.58, "xX+=*"],
+    [0.8, "O0QCoc"],
+    [1.01, ".:;,"],
+  ];
+
+  function pickGlyph(lum) {
+    for (let i = 0; i < BANDS.length; i++) {
+      if (lum < BANDS[i][0]) {
+        const set = BANDS[i][1];
+        return set[Math.floor(Math.random() * set.length)];
+      }
+    }
+    return ".";
+  }
+
+  /* luminance → warm palette (charcoal → bronze → amber → gold) */
+  const WARM = [
+    [0.0, [62, 36, 16]],
+    [0.16, [98, 56, 21]],
+    [0.32, [142, 80, 25]],
+    [0.48, [190, 110, 32]],
+    [0.64, [232, 152, 40]],
+    [0.8, [252, 202, 78]],
+    [0.93, [255, 238, 182]],
+  ];
+
+  function warmAt(l) {
+    for (let i = 1; i < WARM.length; i++) {
+      if (l <= WARM[i][0]) {
+        const [t0, c0] = WARM[i - 1];
+        const [t1, c1] = WARM[i];
+        const t = (l - t0) / (t1 - t0);
+        return [
+          Math.round(c0[0] + (c1[0] - c0[0]) * t),
+          Math.round(c0[1] + (c1[1] - c0[1]) * t),
+          Math.round(c0[2] + (c1[2] - c0[2]) * t),
+        ];
+      }
+    }
+    return WARM[WARM.length - 1][1];
+  }
+
+  const COLS = 78;
   const image = new Image();
   image.src = CFG.introImage || "/assets/img/avatar.png";
 
@@ -40,7 +84,7 @@
     const rows = Math.round(COLS * 0.62);
     const cell = Math.min(
       (window.innerWidth * 0.9) / (COLS * 0.6),
-      (window.innerHeight * 0.72) / rows,
+      (window.innerHeight * 0.82) / rows,
       22
     );
     const cellW = cell * 0.6;
@@ -77,27 +121,56 @@
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
+    const bg = [data[0], data[1], data[2]];
+
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < COLS; x++) {
         const nx = (x + 0.5) / COLS - 0.5;
         const ny = (y + 0.5) / rows - 0.5;
-        if (nx * nx + ny * ny > 0.25) continue;
+        const radius = Math.sqrt(nx * nx + ny * ny);
+        const cx = x * cellW + cellW / 2;
+        const cy = y * cell + cell / 2 + 1;
+
+        /* halo: tiny cyan field outside the portrait */
+        if (radius > 0.5) {
+          const falloff = Math.max(0, 1 - (radius - 0.5) / 0.42);
+          if (Math.random() < 0.5 * falloff * falloff) {
+            const cyan = Math.random() < 0.62;
+            const alpha = (0.1 + 0.32 * falloff) * (0.6 + Math.random() * 0.4);
+            ctx.fillStyle = cyan
+              ? `rgba(95,208,240,${alpha})`
+              : `rgba(84,138,190,${alpha})`;
+            ctx.fillText(Math.random() < 0.7 ? "·" : ".", cx, cy);
+          }
+          continue;
+        }
 
         const i = (y * COLS + x) * 4;
-        const alpha = data[i + 3];
-        if (alpha < 24) continue;
+        if (data[i + 3] < 24) continue;
 
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
-        const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-        const weight = Math.max(0, Math.min(1, 1 - lum));
-        const glyph = RAMP[Math.min(RAMP.length - 1, Math.floor(weight * RAMP.length))];
 
-        if (weight < 0.04) continue;
+        /* drop the flat blue backdrop so the portrait sits on black */
+        const dr = r - bg[0];
+        const dg = g - bg[1];
+        const db = b - bg[2];
+        if (dr * dr + dg * dg + db * db < 2100) continue;
 
-        ctx.fillStyle = `rgba(${r},${g},${b},${0.25 + weight * 0.75})`;
-        ctx.fillText(glyph, x * cellW + cellW / 2, y * cell + cell / 2 + 1);
+        let lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+
+        /* gentle lift so the face glows, without flattening the shadow range */
+        const glow = Math.max(0, 1 - radius / 0.5);
+        lum = Math.min(1, lum * 0.94 + 0.06 + glow * 0.1);
+
+        const glyph = pickGlyph(lum);
+        const shade = Math.pow(lum, 1.1);
+        const [wr, wg, wb] = warmAt(shade);
+        const alpha = 0.88 + Math.random() * 0.12;
+
+        ctx.fillStyle = `rgba(${wr},${wg},${wb},${alpha.toFixed(3)})`;
+        ctx.fillText(glyph, cx, cy);
       }
     }
 
